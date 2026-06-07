@@ -186,7 +186,7 @@ export default function StoreFaqDashboard() {
     <AppProvider i18n={enTranslations}>
       <Page
         title="Store FAQ"
-        subtitle="Create and manage the FAQ entries shown on your store."
+        subtitle="Manage the FAQ entries shown on your storefront."
         secondaryActions={[{ content: "Settings", url: `/settings${search}` }]}
       >
         <Layout>
