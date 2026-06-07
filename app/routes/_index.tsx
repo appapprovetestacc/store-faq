@@ -40,6 +40,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const params = new URLSearchParams();
     if (shop) params.set("shop", shop);
     params.set("host", host);
+    // Forward the preview flag so the preview Worker's /app render keeps
+    // its fixture short-circuit (no-op on the production Worker, where
+    // PREVIEW_MODE is unset).
+    const preview = url.searchParams.get("preview");
+    if (preview) params.set("preview", preview);
     return redirect(`/app?${params.toString()}`);
   }
   return null;

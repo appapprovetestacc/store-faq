@@ -28,6 +28,15 @@ export interface Env {
   // Cloudflare KV namespace for the GDPR audit log. Bind separately so
   // session secrets and compliance records have isolated retention policies.
   GDPR_AUDIT?: KVNamespace;
+  // Cloudflare KV namespace for Store FAQ entries + per-shop display
+  // settings. Optional: app/lib/faq-storage.server.ts falls back to the
+  // SESSIONS namespace (distinct key prefix) and then to an in-memory map
+  // when this is unbound, so the app boots without it. Bind in wrangler.toml
+  // for durable, isolated FAQ storage:
+  //   [[kv_namespaces]]
+  //   binding = "FAQ_STORE"
+  //   id = "<your KV namespace id>"
+  FAQ_STORE?: KVNamespace;
   // Phase 3.8 B + D — outbound link to AppApprove for QA feedback +
   // event ingest. Both are pushed by the AppApprove deploy pipeline at
   // provisioning time (mirroring APPAPPROVE_DEPLOY_SECRET from the

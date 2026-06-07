@@ -364,13 +364,14 @@ function isPreviewModeRequest(request: Request, context: AppLoadContext): boolea
 function previewModeAdminResult(): AdminAuthResult {
   const now = Math.floor(Date.now() / 1000);
   return {
+    // Shape must match OfflineSession ({ shop, accessToken, scope, storedAt }).
+    // The preview short-circuit in shopify-api.server.ts keys on shop, so the
+    // token/scope values are inert sentinels.
     session: {
-      id: "preview|" + PREVIEW_SHOP_DOMAIN,
       shop: PREVIEW_SHOP_DOMAIN,
-      state: "preview-mode",
-      isOnline: false,
       accessToken: "preview-mode-no-real-token",
       scope: "preview",
+      storedAt: now * 1000,
     },
     sessionToken: {
       iss: "https://" + PREVIEW_SHOP_DOMAIN + "/admin",
