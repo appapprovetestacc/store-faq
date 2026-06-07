@@ -1,0 +1,29 @@
+# Declarative billing plans. AppApprove generates the Shopify Billing API
+# calls + Polaris UI components from this file. Edit freely — the build
+# pipeline picks up changes on the next deploy.
+#
+# Schema reference: https://appapprove.com/docs/pricing
+#
+# `currency` is a FALLBACK — at charge time the app queries the merchant's
+# shop.currencyCode and uses that instead. Shopify recurring charges must
+# be denominated in the shop's currency, so the fallback only kicks in if
+# the GraphQL lookup fails.
+
+currency: USD
+
+plans:
+  - name: Free
+    price: 0
+
+  - name: Pro
+    interval: monthly
+    price: 29
+    trial_days: 7
+
+  - name: Enterprise
+    interval: monthly
+    price: 199
+    trial_days: 14
+    features:
+      - Custom integrations
+      - Priority support

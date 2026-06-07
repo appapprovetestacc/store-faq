@@ -1,0 +1,173 @@
+# AppApprove preview deployments per PR. Auto-generated.
+# Each open/sync/reopen of a PR provisions an ephemeral CF Worker
+# at pr-<slug>-<num>.appapprove.app; closing the PR tears
+# it down. Preview Workers boot with PREVIEW_MODE=1 + the GraphQL
+# fixture short-circuit so reviewers can browse the embedded admin
+# UI without OAuth (same bypass as Phase 7 E).
+
+name: AppApprove Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: appapprove-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# SECURITY: the build + deploy steps below run the PR head commit and
+# hold the Cloudflare API token. A pull_request from a fork is untrusted
+# code, so we MUST NOT build/deploy it with secrets (the classic
+# pull_request pwn — a malicious postinstall/build script could exfiltrate
+# CLOUDFLARE_API_TOKEN). The job-level guard restricts the whole preview
+# job to same-repo PRs; fork PRs are skipped entirely (they never created
+# a preview Worker, so skipping teardown for them is fine too).
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only run for PRs from the SAME repository — never a fork. This keeps
+    # the CF deploy token away from untrusted fork code.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      APPAPPROVE_PROJECT_ID: 2ca57a99-d362-4c47-9996-d4d768af6aa2
+      APPAPPROVE_PROJECT_SLUG: store-faq
+      DEPLOY_URL: ${{ secrets.APPAPPROVE_DEPLOY_URL }}
+      PROJECT_SECRET: ${{ secrets.APP_APPROVE_PROJECT_SECRET }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      WORKER_NAME: appapprove-app-store-faq-pr-${{ github.event.pull_request.number }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # On PR close → wrangler delete the preview Worker. Idempotent
+      # (|| true) so a missing-Worker doesn't fail the step; the
+      # callback still fires to keep DB consistent.
+      - name: Tear down preview on close
+        if: github.event.action == 'closed'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -uo pipefail
+          pnpm dlx wrangler@4 delete --name "$WORKER_NAME" --force || true
+          PREVIEW_URL="https://pr-store-faq-${PR_NUMBER}.appapprove.app"
+          BODY=$(node -e '
+            const o = {
+              project_id: process.env.APPAPPROVE_PROJECT_ID,
+              pr_number: Number(process.env.PR_NUMBER),
+              worker_name: process.env.WORKER_NAME,
+              url: process.env.PREVIEW_URL,
+              status: "torn-down",
+            };
+            process.stdout.write(JSON.stringify(o));
+          ')
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$PROJECT_SECRET" -hex | awk '{print $NF}')
+          curl -sS -m 30 -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-AppApprove-Signature: sha256=$SIG" \
+            --data "$BODY" \
+            "${DEPLOY_URL%/}/api/internal/preview-deploy-callback" || true
+
+      # Quota-reserve FIRST — 402 means we exit with a friendly PR
+      # comment instead of failing the check (atomic-reserve happens
+      # in the same TX as the COUNT inside /preview-quota-check).
+      - name: Reserve preview slot
+        if: github.event.action != 'closed'
+        id: reserve
+        run: |
+          set -uo pipefail
+          BODY=$(node -e '
+            const o = {
+              project_id: process.env.APPAPPROVE_PROJECT_ID,
+              pr_number: Number(process.env.PR_NUMBER),
+            };
+            process.stdout.write(JSON.stringify(o));
+          ')
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$PROJECT_SECRET" -hex | awk '{print $NF}')
+          HTTP=$(curl -sS -m 30 -X POST -o resp.json -w '%{http_code}' \
+            -H "Content-Type: application/json" \
+            -H "X-AppApprove-Signature: sha256=$SIG" \
+            --data "$BODY" \
+            "${DEPLOY_URL%/}/api/internal/preview-quota-check")
+          echo "http=$HTTP" >> "$GITHUB_OUTPUT"
+          if [ "$HTTP" = "402" ]; then
+            MSG=$(node -e 'try{const r=JSON.parse(require("fs").readFileSync("resp.json","utf8"));process.stdout.write(r.message||"Preview-quota exceeded.")}catch(e){process.stdout.write("Preview-quota exceeded.")}')
+            UPGRADE=$(node -e 'try{const r=JSON.parse(require("fs").readFileSync("resp.json","utf8"));process.stdout.write(r.upgradeUrl||"")}catch(e){process.stdout.write("")}')
+            gh pr comment "$PR_NUMBER" --body "**Preview unavailable** — $MSG ${UPGRADE:+Upgrade: $UPGRADE}"
+            echo "denied=1" >> "$GITHUB_OUTPUT"
+          elif [ "$HTTP" != "200" ]; then
+            echo "::warning::quota-check returned HTTP $HTTP — proceeding (will fail in deploy if blocked)"
+          fi
+
+      - name: Install deps
+        if: github.event.action != 'closed' && steps.reserve.outputs.denied != '1'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: github.event.action != 'closed' && steps.reserve.outputs.denied != '1'
+        env:
+          PREVIEW_MODE: '1'
+        run: pnpm build
+
+      - name: Deploy preview Worker
+        if: github.event.action != 'closed' && steps.reserve.outputs.denied != '1'
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -uo pipefail
+          if pnpm dlx wrangler@4 deploy --name "$WORKER_NAME"; then
+            echo "status=live" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+      - name: Notify preview deploy
+        if: github.event.action != 'closed' && steps.reserve.outputs.denied != '1'
+        env:
+          STATUS: ${{ steps.deploy.outputs.status || 'failed' }}
+        run: |
+          set -uo pipefail
+          PREVIEW_URL="https://pr-store-faq-${PR_NUMBER}.appapprove.app"
+          BODY=$(node -e '
+            const o = {
+              project_id: process.env.APPAPPROVE_PROJECT_ID,
+              pr_number: Number(process.env.PR_NUMBER),
+              worker_name: process.env.WORKER_NAME,
+              url: process.env.PREVIEW_URL,
+              status: process.env.STATUS,
+            };
+            process.stdout.write(JSON.stringify(o));
+          ')
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$PROJECT_SECRET" -hex | awk '{print $NF}')
+          curl -sS -m 30 -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-AppApprove-Signature: sha256=$SIG" \
+            --data "$BODY" \
+            "${DEPLOY_URL%/}/api/internal/preview-deploy-callback" || true
+          if [ "$STATUS" = "live" ]; then
+            gh pr comment "$PR_NUMBER" --body "**Preview ready** — $PREVIEW_URL"
+          else
+            gh pr comment "$PR_NUMBER" --body "**Preview failed** — see Actions log for details."
+          fi

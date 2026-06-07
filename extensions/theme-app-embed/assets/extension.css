@@ -1,0 +1,42 @@
+/*
+ * AppApprove theme extension stylesheet. Loaded by Shopify via the
+ * [stylesheet] entry in shopify.extension.toml — keep this file lean
+ * (Built-for-Shopify performance budget penalises large per-extension
+ * CSS payloads).
+ */
+
+.appapprove-embed,
+.appapprove-section {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 1rem;
+  font-family: inherit;
+}
+
+.appapprove-embed__heading,
+.appapprove-section__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.appapprove-embed__body,
+.appapprove-section__description {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.appapprove-section--card {
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: transparent;
+}
+
+.appapprove-section--banner {
+  border-left: 4px solid currentColor;
+  padding-left: 1rem;
+}
+
+.appapprove-section--minimal {
+  padding: 0;
+}

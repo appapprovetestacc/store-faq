@@ -1,0 +1,21 @@
+# AppApprove theme extension config. Shopify CLI auto-discovers
+# block files under blocks/ + locale files under locales/. The
+# capabilities block keeps the surface review-safe by default
+# (network_access = false → no third-party fetches from storefront,
+# block_progress = false → can't slow theme render).
+
+api_version = "2025-10"
+
+[[extensions]]
+type = "theme"
+name = "t:extension.name"
+handle = "appapprove-theme-app-embed"
+
+  [extensions.capabilities]
+  network_access = false
+  block_progress = false
+  api_access = false
+
+  [[extensions.metafields]]
+  namespace = "appapprove"
+  key = "config"

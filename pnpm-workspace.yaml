@@ -1,0 +1,15 @@
+# AppApprove scaffold — pnpm 10+ reads onlyBuiltDependencies from
+# this file (the package.json equivalent is treated as legacy). Listing
+# the native-binary packages here makes `pnpm install` exit cleanly
+# inside the AppApprove sandbox AND your GitHub CI.
+#
+# F-101 — pnpm 10+ also requires `packages` to be present whenever
+# pnpm-workspace.yaml exists, otherwise install fails with
+# "ERROR  packages field missing or empty". `["."]` declares the
+# repo root as the only workspace member (single-project layout).
+packages:
+  - .
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd

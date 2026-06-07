@@ -1,0 +1,46 @@
+# Shopify App configuration. AppApprove syncs this file to your Partner
+# Dashboard on every deploy. Don't edit client_id by hand — it's set when
+# AppApprove provisions the app entry (Sprint 30: Partner-API integration).
+
+name = "Store FAQ"
+handle = "store-faq"
+client_id = ""
+application_url = "https://store-faq.appapprove.app"
+embedded = true
+
+[access_scopes]
+# Comma-separated list of API scopes. Match these to what your code actually
+# uses — the AppApprove pre-submission checker flags scope drift.
+scopes = "read_products"
+
+[auth]
+redirect_urls = [
+  "https://store-faq.appapprove.app/auth/callback"
+]
+
+[webhooks]
+# F-NEW-M — keep current. shopify-check blocks pre-2024-07 versions
+# and warns on 2025-01. 2026-01 is the latest stable as of 2026-05.
+api_version = "2026-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app_subscriptions/update" ]
+  uri = "/webhooks/app_subscriptions/update"
+
+[pos]
+embedded = false
+
+[build]
+include_config_on_deploy = true

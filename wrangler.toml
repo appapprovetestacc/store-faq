@@ -1,0 +1,94 @@
+name = "appapprove-app-store-faq"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+# Explicit defaults so wrangler doesn't emit "is not in your Wrangler
+# file" warnings on every deploy. `workers_dev = true` keeps the
+# default `*.workers.dev` subdomain alive (used as the Live URL until
+# the user attaches a custom domain via Phase 7). `preview_urls = true`
+# enables Cloudflare's deploy-preview URLs (free, useful for Phase 7 E
+# preview-iframe wiring).
+workers_dev = true
+preview_urls = true
+# Worker entry is server.ts (a CF-Workers Module-Worker wrapper around the
+# Remix vite build at ./build/server/index.js). Wrangler bundles server.ts
+# via esbuild on each deploy, so the build/server import resolves at deploy
+# time. Pointing main directly at build/server/index.js fails because the
+# Remix vite-built output has no `export default { fetch }` and wrangler
+# treats it as Service-Worker format (which rejects node:* imports).
+main = "./server.ts"
+
+# Static assets (Remix vite client bundle). Wrangler matches incoming paths
+# against this directory first; on a miss the request falls through to the
+# Worker entry (server.ts → Remix request handler). Replaces the legacy
+# [site] / Workers Sites block — that one needed the CF API token to carry
+# `Workers KV Storage:Edit` (Sites stores assets in KV) and would 401 on
+# the first deploy if the token lacked it.
+[assets]
+directory = "./build/client"
+
+# F-112 — wrangler bundler alias for the Remix-Vite virtual server-build
+# module. Vite's @remix-run/dev plugin emits `virtual:remix/server-build`
+# at dev-time, but at deploy time wrangler bundles server.ts via esbuild
+# (not vite) and esbuild can't resolve the virtual import without an
+# explicit alias. The scaffold's server.ts uses the canonical
+# `./build/server` import, but if the AI/patcher rewrites it to the
+# virtual:remix form (both are valid Remix idioms), this alias keeps the
+# deploy from breaking.
+[alias]
+"virtual:remix/server-build" = "./build/server"
+
+# AppApprove provisions custom routes / KV bindings / secrets at deploy
+# time. Don't edit the [vars] section by hand — use the AppApprove dashboard.
+[vars]
+APPAPPROVE_PROJECT_SLUG = "store-faq"
+
+# CF Cron Triggers — uncomment + add schedules here, then mirror them in
+# appapprove.config.ts `crons` so the dispatcher knows which handler to
+# call. AppApprove's deploy pipeline diffs the two and warns on drift.
+# [triggers]
+# crons = [
+#   "0 * * * *",        # hourly
+#   "0 0 * * *",        # daily at 00:00 UTC
+# ]
+
+# CF Queues — define a producer + consumer for each queue you use. The
+# AppApprove deploy pipeline auto-provisions the queue on first deploy.
+#
+# ⚠️ HARD REQUIREMENT: if you un-comment [[queues.consumers]], you MUST also
+# export an `async queue(batch: MessageBatch, env, ctx)` handler from
+# server.ts (alongside the existing `fetch` export). Without that handler
+# the Cloudflare API rejects consumer-binding registration on deploy with
+# error code 11001 ("Queue handler is missing") and `wrangler deploy`
+# exits non-zero — the whole CI run fails. See
+# https://developers.cloudflare.com/queues/configuration/javascript-apis/#consumer
+# If you don't actually need queues, leave both blocks commented out —
+# [triggers.crons] above is enough for most background jobs.
+#
+# [[queues.producers]]
+# binding = "MY_QUEUE"
+# queue = "store-faq-jobs"
+
+# [[queues.consumers]]
+# queue = "store-faq-jobs"
+# max_batch_size = 10
+# max_batch_timeout = 5
+
+# Phase 7 E2 — preview-mode Worker. AppApprove deploys this alongside
+# the production Worker (deploy.yml runs `wrangler deploy` AND
+# `wrangler deploy --env preview` on each push). The preview Worker
+# bakes PREVIEW_MODE = "1" into its env, which the auth-bypass in
+# app/lib/shopify.server.ts + the GraphQL short-circuit in
+# app/lib/shopify-api.server.ts gate on. Real bindings are intentionally
+# omitted — the bypass returns mock session + mock data BEFORE any
+# binding access (KV SESSIONS, D1, etc.) so preview-mode routes render
+# without touching real infra.
+[env.preview]
+name = "appapprove-app-store-faq-preview"
+workers_dev = true
+
+[env.preview.vars]
+APPAPPROVE_PROJECT_SLUG = "store-faq"
+PREVIEW_MODE = "1"
+
+[env.preview.assets]
+directory = "./build/client"

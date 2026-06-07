@@ -1,0 +1,53 @@
+{% comment %}
+  AppApprove section block (active — merchant places it explicitly via
+  the theme editor's "Add block" picker on any compatible section).
+
+  Same uninstall-safe rules as the app embed (see app-embed.liquid).
+{% endcomment %}
+
+<div
+  class="appapprove-section appapprove-section--{{ block.settings.style | default: 'card' }}"
+  data-appapprove-section
+  data-block-id="{{ block.id }}"
+  {{ block.shopify_attributes }}
+>
+  {%- if block.settings.title != blank -%}
+    <h2 class="appapprove-section__title">{{ block.settings.title | escape }}</h2>
+  {%- endif -%}
+  {%- if block.settings.description != blank -%}
+    <div class="appapprove-section__description rte">
+      {{ block.settings.description }}
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:extension.section_name",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:settings.title.label",
+      "default": "t:settings.title.default"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:settings.description.label"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:settings.style.label",
+      "default": "card",
+      "options": [
+        { "value": "card", "label": "t:settings.style.options.card" },
+        { "value": "banner", "label": "t:settings.style.options.banner" },
+        { "value": "minimal", "label": "t:settings.style.options.minimal" }
+      ]
+    }
+  ]
+}
+{% endschema %}

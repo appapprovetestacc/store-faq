@@ -1,0 +1,16 @@
+{
+  "name": "appapprove-checkout-ui",
+  "private": true,
+  "version": "0.1.0",
+  "sideEffects": false,
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@shopify/ui-extensions": "^2025.10.0",
+    "@shopify/ui-extensions-react": "^2025.10.0",
+    "react": "^18.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.6.0"
+  }
+}

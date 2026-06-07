@@ -1,0 +1,25 @@
+# AppApprove Checkout UI extension. Renders inside the Shopify
+# checkout. Some surface targets are Shopify Plus only — see README.md
+# for the full target → plan-tier matrix and gate accordingly in code
+# before submitting for review (plan-tier mismatches are a common
+# rejection reason).
+
+api_version = "2025-10"
+
+[[extensions]]
+type = "ui_extension"
+name = "t:extension.name"
+handle = "appapprove-checkout-ui"
+
+  [[extensions.targeting]]
+  module = "./src/Checkout.tsx"
+  target = "purchase.checkout.block.render"
+
+  [extensions.capabilities]
+  network_access = false
+  block_progress = false
+  api_access = true
+
+  [extensions.capabilities.collect_buyer_consent]
+  customer_privacy = false
+  sms_marketing = false

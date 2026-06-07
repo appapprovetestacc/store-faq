@@ -1,0 +1,18 @@
+{
+  "name": "appapprove-payment-customization",
+  "private": true,
+  "version": "0.1.0",
+  "sideEffects": false,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/*.test.mjs"
+  },
+  "dependencies": {
+    "@shopify/shopify_function": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "extension": {
+    "name": "AppApprove",
+    "embed_name": "AppApprove embed",
+    "section_name": "AppApprove section",
+    "heading_label": "App content"
+  },
+  "settings": {
+    "enabled": {
+      "label": "Enable",
+      "info": "Switch off to hide without uninstalling the app."
+    },
+    "heading": {
+      "label": "Heading",
+      "default": "Powered by this app"
+    },
+    "body": {
+      "label": "Body text"
+    },
+    "title": {
+      "label": "Title",
+      "default": "Highlight"
+    },
+    "description": {
+      "label": "Description"
+    },
+    "style": {
+      "label": "Style",
+      "options": {
+        "card": "Card",
+        "banner": "Banner",
+        "minimal": "Minimal"
+      }
+    }
+  }
+}

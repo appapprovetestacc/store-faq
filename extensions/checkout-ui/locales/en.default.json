@@ -1,0 +1,13 @@
+{
+  "name": "AppApprove Checkout",
+  "intro": {
+    "title": "Powered by AppApprove",
+    "body": "Replace this placeholder with the merchant-facing message your checkout extension should show."
+  },
+  "plus": {
+    "body": "Plus-only feature placeholder — wired because shop.plan reports Plus."
+  },
+  "standard": {
+    "body": "Standard-tier placeholder — Plus-only features are gated off automatically."
+  }
+}

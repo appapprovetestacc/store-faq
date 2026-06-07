@@ -1,0 +1,14 @@
+query RunInput {
+  cart {
+    cost {
+      totalAmount {
+        amount
+        currencyCode
+      }
+    }
+    paymentOptions {
+      handle
+      type
+    }
+  }
+}

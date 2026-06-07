@@ -1,0 +1,58 @@
+{% comment %}
+  AppApprove app embed (passive — always-on once enabled in the theme
+  editor).
+
+  Uninstall-safe rules — keep these when editing:
+    * Render only inside this {% if %} guard. Merchants must be able to
+      switch the embed off without uninstalling the app.
+    * No <script src="https://..."> imports of third-party origins.
+      Storefront performance + Shopify review both reject those without
+      justification. Use Shopify CDN-hosted assets only.
+    * No localStorage / sessionStorage writes that aren't cleared on
+      block.settings.enabled = false. Prefer data-* attributes + cookies
+      with explicit retention.
+    * No inline <style> tags — use the [stylesheet] entry in
+      shopify.extension.toml so themes get a single, cacheable CSS file.
+{% endcomment %}
+
+{%- if block.settings.enabled -%}
+  <div
+    class="appapprove-embed"
+    data-appapprove-embed
+    data-block-id="{{ block.id }}"
+    role="region"
+    aria-label="{{ 'extension.heading_label' | t }}"
+  >
+    <h3 class="appapprove-embed__heading">{{ block.settings.heading | escape }}</h3>
+    {%- if block.settings.body != blank -%}
+      <p class="appapprove-embed__body">{{ block.settings.body | escape }}</p>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:extension.embed_name",
+  "target": "body",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "t:settings.enabled.label",
+      "default": false,
+      "info": "t:settings.enabled.info"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.heading.label",
+      "default": "t:settings.heading.default"
+    },
+    {
+      "type": "textarea",
+      "id": "body",
+      "label": "t:settings.body.label"
+    }
+  ]
+}
+{% endschema %}

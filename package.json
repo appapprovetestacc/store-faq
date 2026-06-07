@@ -1,0 +1,51 @@
+{
+  "name": "store-faq",
+  "version": "0.1.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "packageManager": "pnpm@10.4.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  },
+  "scripts": {
+    "build": "remix vite:build",
+    "dev": "remix vite:dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test tests/*.test.mjs",
+    "test:review": "node --test tests/*.test.mjs",
+    "test:browser": "playwright test tests/review-browser.spec.ts",
+    "test:performance": "node --test tests/performance-budget.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remix-run/cloudflare": "^2.15.0",
+    "@remix-run/cloudflare-pages": "^2.15.0",
+    "@remix-run/react": "^2.15.0",
+    "@shopify/polaris": "^13.9.0",
+    "@shopify/shopify-app-remix": "^3.7.0",
+    "@shopify/ui-extensions-react": "^2025.7.0",
+    "isbot": "^5.1.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251201.0",
+    "@remix-run/dev": "^2.15.0",
+    "@playwright/test": "^1.49.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "vite-tsconfig-paths": "^5.1.0",
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
